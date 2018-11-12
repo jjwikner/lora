@@ -474,7 +474,7 @@ int main (int argc, char *argv[]) {
 
         loraWriteReg(RegPaRamp, (readReg(RegPaRamp) & 0xF0) | 0x08); // set PA ramp-up time 50 uSec
 
-        loraSetTxPower(3);
+        loraSetTxPower(33);
 
         printf("Send packets at SF%i on %.6lf MHz.\n", sf,(double)freq/1000000);
         printf("------------------\n");
@@ -521,7 +521,7 @@ int main (int argc, char *argv[]) {
 	{
 	  while(globalCounter > 1) {  
 	  loraReceivePacket(); 
-	  delay(100);
+	  delay(10);
 	  globalCounter--;
 	  }
 
@@ -530,7 +530,7 @@ int main (int argc, char *argv[]) {
       else { 
 	while(1) {
 	  loraReceivePacket(); 
-	  delay(10);
+	  delay(1);
 	}
       }						
     }
