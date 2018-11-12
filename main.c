@@ -309,7 +309,7 @@ void loraSetup(uint32_t  freq)
 
 }
 
-boolean receive(char *payload) {
+boolean loraRecieve(char *payload) {
     // clear rxDone
     loraWriteReg(REG_IRQ_FLAGS, 0x40);
 
@@ -337,14 +337,14 @@ boolean receive(char *payload) {
     return true;
 }
 
-void receivepacket() {
+void loraReceivePacket() {
 
     long int SNR;
     int rssicorr;
 
     if(digitalRead(dio0) == 1)
     {
-        if(receive(message)) {
+        if(loraRecieve(message)) {
             byte value = readReg(REG_PKT_SNR_VALUE);
             if( value & 0x80 ) // The SNR sign bit is 1
             {
@@ -509,18 +509,30 @@ int main (int argc, char *argv[]) {
 
 	    
     } else {
+      // Receive mode
+      
+      // radio init
+      opmodeLora();
+      opmode(OPMODE_STANDBY);
+      opmode(OPMODE_RX);
+      printf("Listening at SF%i on %.6lf MHz.\n", sf,(double)freq/1000000);
+      printf("------------------\n");
+      if (argc > 3) // single receive mode
+	{
+	  while(globalCounter > 1) {  
+	  loraReceivePacket(); 
+	  delay(100);
+	  globalCounter--;
+	  }
 
-        // radio init
-        opmodeLora();
-        opmode(OPMODE_STANDBY);
-        opmode(OPMODE_RX);
-        printf("Listening at SF%i on %.6lf MHz.\n", sf,(double)freq/1000000);
-        printf("------------------\n");
-        while(1) {
-            receivepacket(); 
-            delay(1);
-        }
 
+	}
+      else { 
+	while(1) {
+	  loraReceivePacket(); 
+	  delay(10);
+	}
+      }						
     }
 
     return (0);
