@@ -35,6 +35,7 @@ noInterrupt = True
 
 
 def loraWaitForCall():
+    print("Wait for call")
     message = False
     for freq in freqs:
         # Listen for the response, if an ack is sent back, then that's the shit
@@ -42,7 +43,7 @@ def loraWaitForCall():
         rcvResults = subprocess.run([executable, "rec", str(freq), "single"], stdout=subprocess.PIPE)
         rcvText    = rcvResults.stdout.decode("utf-8")
         if "Payload:" in rcvText:
-            print(rcvResults.stdout)
+            #print(rcvResults.stdout)
             if "NODE ID:" in rcvText:
                 msgS = rcvText.find('NODE ID:')+8
                 msgE = rcvText.find('\n',msgS)
@@ -50,16 +51,16 @@ def loraWaitForCall():
                 print("Message from {}".format(message))
     return message
 
-def loraSendSignal(runs, message):
+def loraSendMessage(runs, message):
+    print("Send message {}".format(message))
     ctr = 0
     while ctr < runs:
-        print("MM{}".format(freqs))
         for freq in freqs:
             # Send the messages
             sendResults = subprocess.run([executable, "sender", str(freq), message ], stdout=subprocess.PIPE)
-            print(sendResults.stdout)
+            #print(sendResults.stdout)
 
-        time.sleep(2);
+        time.sleep(1);
         # Based on contact            
         ctr = ctr + 1
 
@@ -70,17 +71,20 @@ theMessage = False
 
 if len(sys.argv) > 1: # Input argument
 
+    print("Start in listen mode")
     while not theMessage:
         theMessage = loraWaitForCall()
 
+    time.sleep(3)
     # send ACK
-    print("Send ACK")
-
-    loraSendSignal(10, theMessage + ":ACK")
+    print("Received message from {}. Return ACK.")
+    loraSendMessage(4, "NODE ID:" + theMessage + ":ACK")
 
 else:
 
-    loraSendSignal(10, "NODE ID:"+mac)
+    print("Start in send mode")
+    
+    loraSendMessage(4, "NODE ID:" + mac )
 
     theMessage = False
     
