@@ -3,6 +3,9 @@
 import os
 import subprocess
 import datetime
+import time
+import sys
+
 from uuid import getnode as get_mac
 
 def getmac(interface):
@@ -16,35 +19,73 @@ executable = "./dragino_lora_app"
 message = datetime.datetime.now().isoformat()
 mac = getmac('wlan0')
 
+
 freq1 = 868100000;
 freq2 = 868200000;
+freq2 = 868100000;
 
-freqs = [freq1, freq2]
+freqs = [freq1]
 
 # Subfunctions here
 
 
 ctr = 0;
 
-while ctr < 10:
-    
-    for freq in freqs:
-        # Send the messages
-        print('Sending at {}'.format(freq))
-        sendResults = subprocess.run([executable, "sender", str(freq), "NODE ID:"+ mac ], stdout=subprocess.PIPE)
-        # print(sendResults.stdout)
+noInterrupt = True
 
+
+def loraWaitForCall():
+    message = False
     for freq in freqs:
         # Listen for the response, if an ack is sent back, then that's the shit
         rcvResults = subprocess.run([executable, "rec", str(freq), "single"], stdout=subprocess.PIPE)        
-        if "Payload:" in rcvResults.stdout.decode("utf-8"): 
-            print("Someone did something");
+        rcvResults = subprocess.run([executable, "rec", str(freq), "single"], stdout=subprocess.PIPE)
+        rcvText    = rcvResults.stdout.decode("utf-8")
+        if "Payload:" in rcvText:
             print(rcvResults.stdout)
-            if "NODE ID:" in rcvResults.stdout.decode("utf-8"): # Check here if message is for you.
-                print("Contact with master")
+            if "NODE ID:" in rcvText:
+                msgS = rcvText.find('NODE ID:')+8
+                msgE = rcvText.find('\n',msgS)
+                message = rcvText[msgS:msgE]
+                print("Message from {}".format(message))
+    return message
 
-    # Based on contact
+def loraSendSignal(runs, message):
+    ctr = 0
+    while ctr < runs:
+        print("MM{}".format(freqs))
+        for freq in freqs:
+            # Send the messages
+            sendResults = subprocess.run([executable, "sender", str(freq), message ], stdout=subprocess.PIPE)
+            print(sendResults.stdout)
+
+        time.sleep(2);
+        # Based on contact            
+        ctr = ctr + 1
+
+
+### MAIN
+
+theMessage = False
+
+if len(sys.argv) > 1: # Input argument
+
+    while not theMessage:
+        theMessage = loraWaitForCall()
+
+    # send ACK
+    print("Send ACK")
+
+    loraSendSignal(10, theMessage + ":ACK")
+
+else:
+
+    loraSendSignal(10, "NODE ID:"+mac)
+
+    theMessage = False
     
-            
-    ctr = ctr+1
+    while not theMessage:
+        theMessage = loraWaitForCall()
+
+    
 
